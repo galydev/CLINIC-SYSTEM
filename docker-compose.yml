@@ -1,0 +1,176 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: clinic_postgres
+    environment:
+      POSTGRES_USER: clinic_admin
+      POSTGRES_PASSWORD: clinic_password
+      POSTGRES_DB: clinic_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - clinic_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinic_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: clinic_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: clinic_user
+      RABBITMQ_DEFAULT_PASS: clinic_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - clinic_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Identity Service
+  identity-service:
+    build:
+      context: ./identity-service
+      dockerfile: Dockerfile
+    container_name: identity_service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://clinic_admin:clinic_password@postgres:5432/identity_db
+      - RABBITMQ_URL=amqp://clinic_user:clinic_pass@rabbitmq:5672/
+      - SERVICE_PORT=8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - clinic_network
+    restart: unless-stopped
+
+  # Patient Service
+  patient-service:
+    build:
+      context: ./patient-service
+      dockerfile: Dockerfile
+    container_name: patient_service
+    environment:
+      - DATABASE_URL=postgresql://clinic_admin:clinic_password@postgres:5432/patient_db
+      - RABBITMQ_URL=amqp://clinic_user:clinic_pass@rabbitmq:5672/
+      - SERVICE_PORT=8002
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - clinic_network
+    restart: unless-stopped
+
+  # Medical Records Service
+  medical-records-service:
+    build:
+      context: ./medical-records-service
+      dockerfile: Dockerfile
+    container_name: medical_records_service
+    environment:
+      - DATABASE_URL=postgresql://clinic_admin:clinic_password@postgres:5432/medical_records_db
+      - RABBITMQ_URL=amqp://clinic_user:clinic_pass@rabbitmq:5672/
+      - SERVICE_PORT=8003
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - clinic_network
+    restart: unless-stopped
+
+  # Orders Service
+  orders-service:
+    build:
+      context: ./orders-service
+      dockerfile: Dockerfile
+    container_name: orders_service
+    environment:
+      - DATABASE_URL=postgresql://clinic_admin:clinic_password@postgres:5432/orders_db
+      - RABBITMQ_URL=amqp://clinic_user:clinic_pass@rabbitmq:5672/
+      - SERVICE_PORT=8004
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - clinic_network
+    restart: unless-stopped
+
+  # Inventory Service
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory_service
+    environment:
+      - DATABASE_URL=postgresql://clinic_admin:clinic_password@postgres:5432/inventory_db
+      - RABBITMQ_URL=amqp://clinic_user:clinic_pass@rabbitmq:5672/
+      - SERVICE_PORT=8005
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - clinic_network
+    restart: unless-stopped
+
+  # Billing Service
+  billing-service:
+    build:
+      context: ./billing-service
+      dockerfile: Dockerfile
+    container_name: billing_service
+    environment:
+      - DATABASE_URL=postgresql://clinic_admin:clinic_password@postgres:5432/billing_db
+      - RABBITMQ_URL=amqp://clinic_user:clinic_pass@rabbitmq:5672/
+      - SERVICE_PORT=8006
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - clinic_network
+    restart: unless-stopped
+
+networks:
+  clinic_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
