@@ -48,17 +48,20 @@ Clinic-Management-System/
 ## Inicio Rápido
 
 1. Clonar el repositorio:
+
 ```bash
 git clone <repository-url>
 cd Clinic-Management-System
 ```
 
 2. Construir y ejecutar los servicios:
+
 ```bash
 docker-compose up --build
 ```
 
 3. Los servicios estarán disponibles en:
+
 - Identity Service: http://localhost:8001
 - Patient Service: http://localhost:8002
 - Medical Records Service: http://localhost:8003
@@ -73,14 +76,6 @@ Cada microservicio tiene su propio README con instrucciones específicas de desa
 ## Documentación
 
 La documentación detallada del proyecto se encuentra en la carpeta `docs/`.
-
-## Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
 
 ## Licencia
 
